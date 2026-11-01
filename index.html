@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BX Tournament">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Beyblade X Tournament Manager</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#151d30;--panel2:#1d2940;--line:#2d3a54;--text:#f4f7fb;--muted:#aab6c9;--accent:#f5a623;--green:#37c987;--red:#ff6b6b;--blue:#75b7ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#101a30,#080c16 65%);color:var(--text);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+header{padding:22px 16px 14px;max-width:900px;margin:auto}
+.brand{display:flex;align-items:center;gap:10px;color:var(--accent);font-weight:900;letter-spacing:.12em;font-size:12px}
+h1{font-size:clamp(25px,6vw,36px);line-height:1.1;margin:7px 0 4px}header p{margin:0;color:var(--muted);font-size:13px}
+main{max-width:900px;margin:auto;padding:0 12px 36px}
+.panel{background:rgba(21,29,48,.96);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0;box-shadow:0 8px 24px #0002}
+.panel h2{font-size:17px;margin:0 0 12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px;text-align:center}
+.stat strong{display:block;font-size:24px}.stat span{font-size:11px;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center}.row>*{min-width:0}.grow{flex:1}
+input,select,button{font:inherit}input,select{width:100%;background:#0d1526;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:44px}
+button{border:0;border-radius:10px;padding:11px 14px;min-height:42px;font-weight:750;background:var(--accent);color:#171717;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}.secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text)}.danger{background:#4a2029;border:1px solid #79313c;color:#ffd9dc}.success{background:#164a38;color:#c9ffe8}.small{padding:7px 10px;min-height:34px;font-size:13px}
+.tabs{display:flex;gap:7px;position:sticky;top:0;z-index:3;background:#0b1020;padding:8px 0}
+.tabs button{flex:1}.tabs .active{background:var(--accent);color:#171717}
+.player,.match,.standing{border:1px solid var(--line);background:#10192b;border-radius:12px;padding:11px;margin:8px 0}
+.player{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.muted{color:var(--muted);font-size:12px}.pill{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:3px 8px;color:var(--muted);font-size:11px}
+.match-head,.between{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:12px 0}
+.fighter{background:var(--panel2);border-radius:12px;padding:12px 8px;text-align:center;min-width:0}
+.fighter .name{font-weight:800;overflow-wrap:anywhere}.score{font-size:32px;font-weight:900;line-height:1.3}
+.finish-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.finish-grid button{background:#263650;border:1px solid #405371;color:#fff;font-size:12px;padding:9px 5px}
+.finish-grid button b{color:var(--accent);font-size:14px}
+.winner{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
+.standing{display:grid;grid-template-columns:34px 1fr auto auto;gap:8px;align-items:center}
+.rank{font-size:20px;font-weight:900;color:var(--accent)}.pts{font-size:20px;font-weight:900;text-align:right}
+.empty{text-align:center;padding:24px 10px;color:var(--muted)}
+.note{font-size:12px;color:var(--muted);line-height:1.5}
+.hidden{display:none!important}
+footer{max-width:900px;margin:auto;padding:0 16px 24px;color:var(--muted);font-size:11px}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:16px;max-width:420px;width:calc(100% - 28px);padding:18px}
+dialog::backdrop{background:#000a}
+@media(min-width:650px){main{padding-left:20px;padding-right:20px}.panel{padding:18px}.finish-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">✦ BEYBLADE X <span class="pill">SWISS SYSTEM</span></div>
+  <h1>Tournament Manager</h1>
+  <p>瑞士輪配對・比賽計分・即時排行榜</p>
+</header>
+<main>
+  <section class="panel" style="border-color:#8a6a2a;background:#292315">
+    <strong>iPhone / iPad 使用提示</strong>
+    <p class="note" style="margin:6px 0 0">建議使用 Safari 開啟本網頁，並透過「分享」→「加入主畫面」建立桌面圖示。賽事資料會保存在目前裝置的瀏覽器中；更換裝置或清除網站資料前，請先匯出 CSV 備份。</p>
+  </section>
+  <section class="panel">
+    <div class="row">
+      <input id="eventName" class="grow" aria-label="賽事名稱" value="Beyblade X Tournament">
+      <button id="exportBtn" class="secondary small">匯出 CSV</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong id="playerCount">0</strong><span>參賽選手</span></div>
+      <div class="stat"><strong id="roundCount">0</strong><span>已開啟輪數</span></div>
+      <div class="stat"><strong id="matchCount">0/0</strong><span>已完成對戰</span></div>
+    </div>
+    <div class="note">資料會嘗試保存在此瀏覽器。同一裝置、同一瀏覽器重新開啟可繼續賽事；建議定期匯出 CSV 備份。</div>
+    <div id="storageWarning" class="note hidden" style="color:#ffb4a8;margin-top:7px">此瀏覽器目前不允許本機儲存。程式仍可操作，但關閉頁面後資料可能遺失，請定期匯出 CSV。</div>
+  </section>
+
+  <nav class="tabs" aria-label="功能分頁">
+    <button class="active" data-tab="players">選手</button>
+    <button class="" data-tab="matches">對戰</button>
+    <button class="" data-tab="standings">排名</button>
+    <button class="" data-tab="settings">設定</button>
+  </nav>
+
+  <section id="tab-players" class="panel">
+    <h2>選手登記</h2>
+    <form id="addForm" class="row">
+      <input id="playerName" class="grow" placeholder="輸入選手名稱" maxlength="40" required>
+      <button type="submit">新增</button>
+    </form>
+    <div id="playerList"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="startBtn" class="grow" disabled>開始第一輪配對</button>
+      <button id="resetBtn" class="danger small">重設賽事</button>
+    </div>
+    <p class="note">開始賽事後不能再新增或刪除選手，以免破壞已完成的配對與排名。</p>
+  </section>
+
+  <section id="tab-matches" class="panel hidden">
+    <div class="between">
+      <h2 style="margin:0">對戰紀錄</h2>
+      <span id="roundLabel" class="pill">尚未開始</span>
+    </div>
+    <div id="matchList"></div>
+    <div class="row" style="margin-top:12px">
+      <button id="nextRoundBtn" class="grow" disabled>產生下一輪配對</button>
+    </div>
+  </section>
+
+  <section id="tab-standings" class="panel hidden">
+    <h2>即時排行榜</h2>
+    <div id="standingsList"></div>
+    <p class="note">排序：賽事積分 → Buchholz（所有對手的賽事積分總和）→ 勝場 → 名稱。輪空取得 3 賽事積分，不計入勝場或敗場。</p>
+  </section>
+
+  <section id="tab-settings" class="panel hidden">
+    <h2>比賽規則</h2>
+    <div class="row between"><span>Xtreme Finish</span><strong>3 分</strong></div><hr>
+    <div class="row between"><span>Over Finish</span><strong>2 分</strong></div><hr>
+    <div class="row between"><span>Burst Finish</span><strong>2 分</strong></div><hr>
+    <div class="row between"><span>Spin Finish</span><strong>1 分</strong></div><hr>
+    <div class="row between"><span>單場勝出條件</span><strong>先達 4 分</strong></div><hr>
+    <div class="row between"><span>瑞士輪勝方積分</span><strong>3 分</strong></div>
+    <p class="note">本程式按目前設定的 Beyblade X Finish 得分及「先達 4 分」進行記錄。不同賽事主辦方可能另有比賽流程、組別、裁判及平手處理規定，正式比賽請以該場賽事規章為準。</p>
+    <button id="clearBtn" class="danger">清除全部賽事資料</button>
+  </section>
+</main>
+<footer>Beyblade X Tournament Manager v2 · Single-file web app</footer>
+
+<dialog id="confirmDialog">
+  <h2 id="dialogTitle">確認操作</h2>
+  <p id="dialogText" class="note"></p>
+  <div class="row">
+    <button id="dialogYes" class="danger grow">確定</button>
+    <button id="dialogNo" class="secondary grow">取消</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+const STORAGE_KEY = "bx_swiss_tournament_v1";
+const FINISHES = [
+  {key:"xtreme",name:"Xtreme Finish",points:3},
+  {key:"over",name:"Over Finish",points:2},
+  {key:"burst",name:"Burst Finish",points:2},
+  {key:"spin",name:"Spin Finish",points:1}
+];
+let state = loadState();
+let pendingAction = null;
+
+function freshState(){
+  return {eventName:"Beyblade X Tournament",players:[],rounds:[],nextPlayerId:1,nextMatchId:1,started:false};
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw) return freshState();
+    const parsed=JSON.parse(raw);
+    if(!parsed || !Array.isArray(parsed.players) || !Array.isArray(parsed.rounds)) return freshState();
+    return {...freshState(),...parsed};
+  }catch(e){return freshState();}
+}
+function save(){
+  state.eventName=document.getElementById("eventName").value.trim() || "Beyblade X Tournament";
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+  catch(e){
+    const warning=document.getElementById("storageWarning");
+    if(warning) warning.classList.remove("hidden");
+  }
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function player(id){return state.players.find(p=>p.id===id);}
+function allMatches(){return state.rounds.flatMap(r=>r.matches);}
+function currentRound(){return state.rounds[state.rounds.length-1]||null;}
+function playerStats(p){
+  const matches=allMatches().filter(m=>m.status==="complete"&&(m.a===p.id||m.b===p.id));
+  const wins=matches.filter(m=>m.winner===p.id).length;
+  const losses=matches.length-wins;
+  const opponents=matches.map(m=>m.a===p.id?m.b:m.a);
+  const buchholz=opponents.reduce((sum,id)=>sum+(player(id)?.points||0),0);
+  return {wins,losses,played:matches.length,buchholz,opponents};
+}
+function standings(){
+  return [...state.players].sort((a,b)=>{
+    const A=playerStats(a),B=playerStats(b);
+    return b.points-a.points || B.buchholz-A.buchholz || B.wins-A.wins || a.name.localeCompare(b.name);
+  });
+}
+function render(){
+  document.getElementById("eventName").value=state.eventName;
+  document.getElementById("playerCount").textContent=state.players.length;
+  document.getElementById("roundCount").textContent=state.rounds.length;
+  const ms=allMatches(),done=ms.filter(m=>m.status==="complete").length;
+  document.getElementById("matchCount").textContent=`${done}/${ms.length}`;
+  document.getElementById("startBtn").disabled=state.started||state.players.length<2;
+  document.getElementById("startBtn").textContent=state.started?"賽事已開始":"開始第一輪配對";
+  renderPlayers();renderMatches();renderStandings();
+  const r=currentRound();
+  document.getElementById("roundLabel").textContent=r?`第 ${r.number} 輪`:"尚未開始";
+  document.getElementById("nextRoundBtn").disabled=!r||!r.matches.every(m=>m.status==="complete")||state.players.length<2;
+  document.getElementById("nextRoundBtn").textContent=r?`產生第 ${r.number+1} 輪配對`:"產生下一輪配對";
+}
+function renderPlayers(){
+  const el=document.getElementById("playerList");
+  if(!state.players.length){el.innerHTML='<div class="empty">尚未登記選手</div>';return;}
+  el.innerHTML=state.players.map((p,i)=>`<div class="player"><div><strong>${i+1}. ${esc(p.name)}</strong><div class="muted">${p.points} 賽事積分</div></div>${state.started?'<span class="pill">已登記</span>':`<button class="danger small" data-remove="${p.id}">刪除</button>`}</div>`).join("");
+  el.querySelectorAll("[data-remove]").forEach(btn=>btn.addEventListener("click",()=>removePlayer(Number(btn.dataset.remove))));
+}
+function renderMatches(){
+  const el=document.getElementById("matchList"),r=currentRound();
+  if(!r){el.innerHTML='<div class="empty">登記至少 2 位選手後，開始第一輪配對。</div>';return;}
+  let html="";
+  r.matches.forEach((m,i)=>{
+    const a=player(m.a),b=player(m.b);
+    const done=m.status==="complete";
+    html+=`<article class="match">
+      <div class="match-head"><strong>Match ${i+1}</strong><span class="pill">${done?"已完成":"進行中"}</span></div>
+      <div class="vs">
+        <div class="fighter ${done&&m.winner===m.a?"winner":""}"><div class="name">${esc(a?.name||"已刪除")}</div><div class="score">${m.scoreA}</div>${done&&m.winner===m.a?'<span class="pill">WINNER</span>':""}</div>
+        <strong class="muted">VS</strong>
+        <div class="fighter ${done&&m.winner===m.b?"winner":""}"><div class="name">${esc(b?.name||"已刪除")}</div><div class="score">${m.scoreB}</div>${done&&m.winner===m.b?'<span class="pill">WINNER</span>':""}</div>
+      </div>`;
+    if(!done){
+      html+=`<div class="muted" style="margin:5px 0 8px">記錄得分方的 Finish 類型：</div><div class="finish-grid">`;
+      FINISHES.forEach(f=>{
+        html+=`<button data-score="${m.id}" data-player="${m.a}" data-finish="${f.key}">${esc(a?.name||"選手 A")}<br>${f.name} <b>+${f.points}</b></button>`;
+        html+=`<button data-score="${m.id}" data-player="${m.b}" data-finish="${f.key}">${esc(b?.name||"選手 B")}<br>${f.name} <b>+${f.points}</b></button>`;
+      });
+      html+="</div>";
+    }else{
+      html+=`<div class="muted" style="text-align:center">勝方：${esc(player(m.winner)?.name||"")} · ${m.scoreA} : ${m.scoreB}</div>`;
+    }
+    html+="</article>";
+  });
+  if(r.byePlayer){html+=`<article class="match"><strong>輪空（Bye）</strong><p>${esc(player(r.byePlayer)?.name||"選手")} 本輪輪空，獲得 3 賽事積分。</p></article>`;}
+  el.innerHTML=html;
+  el.querySelectorAll("[data-score]").forEach(btn=>btn.addEventListener("click",()=>recordFinish(Number(btn.dataset.score),Number(btn.dataset.player),btn.dataset.finish)));
+}
+function renderStandings(){
+  const el=document.getElementById("standingsList");
+  if(!state.players.length){el.innerHTML='<div class="empty">尚未有排行榜資料</div>';return;}
+  el.innerHTML=standings().map((p,i)=>{
+    const s=playerStats(p);
+    return `<div class="standing"><div class="rank">${i+1}</div><div><strong>${esc(p.name)}</strong><div class="muted">${s.wins} 勝 ${s.losses} 敗 · ${p.byes||0} 次輪空 · Buchholz ${s.buchholz}</div></div><div class="muted">${s.played} 場</div><div class="pts">${p.points}</div></div>`;
+  }).join("");
+}
+function addPlayer(name){
+  const clean=name.trim();
+  if(!clean)return;
+  if(state.players.some(p=>p.name.toLowerCase()===clean.toLowerCase())){alert("已有相同名稱的選手。");return;}
+  state.players.push({id:state.nextPlayerId++,name:clean,points:0,byes:0});
+  save();render();
+}
+function removePlayer(id){
+  if(state.started)return;
+  state.players=state.players.filter(p=>p.id!==id);
+  save();render();
+}
+function recordFinish(matchId,playerId,finishKey){
+  const m=allMatches().find(x=>x.id===matchId);
+  const f=FINISHES.find(x=>x.key===finishKey);
+  if(!m||m.status==="complete"||!f||(playerId!==m.a&&playerId!==m.b))return;
+  if(playerId===m.a)m.scoreA+=f.points;else m.scoreB+=f.points;
+  if(m.scoreA>=4||m.scoreB>=4){
+    m.status="complete";
+    m.winner=m.scoreA>=4?m.a:m.b;
+    const winner=player(m.winner),loser=player(m.winner===m.a?m.b:m.a);
+    winner.points+=3;
+    m.history.push({playerId,finishKey,points:f.points});
+    save();render();
+    alert(`${winner.name} 勝出！\n最終比分：${m.scoreA} : ${m.scoreB}`);
+    return;
+  }
+  m.history.push({playerId,finishKey,points:f.points});
+  save();render();
+}
+function pairRound(){
+  const sorted=standings();
+  let bye=null,pool=[...sorted];
+  if(pool.length%2===1){
+    const byeCandidates=[...pool].sort((a,b)=>(a.byes||0)-(b.byes||0)||a.points-b.points||a.name.localeCompare(b.name));
+    bye=byeCandidates[0];
+    pool=pool.filter(p=>p.id!==bye.id);
+  }
+  // Greedy Swiss pairing: pair players in standings order, avoid rematches
+  // whenever possible, then choose the closest score group. This stays fast
+  // even for large local tournaments.
+  const previousPairs=new Set(allMatches().map(m=>[m.a,m.b].sort((x,y)=>x-y).join(":")));
+  const pairs=[];
+  while(pool.length){
+    const first=pool.shift();
+    let bestIndex=-1, bestCost=Infinity;
+    for(let i=0;i<pool.length;i++){
+      const opponent=pool[i];
+      const key=[first.id,opponent.id].sort((x,y)=>x-y).join(":");
+      const rematch=previousPairs.has(key);
+      const scoreGap=Math.abs(first.points-opponent.points);
+      const cost=(rematch?1000000:0)+scoreGap*100+i;
+      if(cost<bestCost){bestCost=cost;bestIndex=i;}
+    }
+    if(bestIndex>=0){
+      const opponent=pool.splice(bestIndex,1)[0];
+      pairs.push([first.id,opponent.id]);
+    }
+  }
+  const matches=pairs.map(([a,b])=>({id:state.nextMatchId++,a,b,scoreA:0,scoreB:0,status:"pending",winner:null,history:[]}));
+  if(bye){bye.points+=3;bye.byes=(bye.byes||0)+1;}
+  const number=state.rounds.length+1;
+  state.rounds.push({number,matches,byePlayer:bye?.id||null});
+  state.started=true;save();render();showTab("matches");
+}
+function confirmReset(){
+  openDialog("重設整場賽事","這會刪除所有選手、輪數、比分及賽事紀錄。建議先匯出 CSV 備份。",()=>{
+    state=freshState();save();render();document.getElementById("eventName").value=state.eventName;showTab("players");
+  });
+}
+function openDialog(title,text,action){
+  document.getElementById("dialogTitle").textContent=title;
+  document.getElementById("dialogText").textContent=text;
+  pendingAction=action;document.getElementById("confirmDialog").showModal();
+}
+function showTab(tab){
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  ["players","matches","standings","settings"].forEach(t=>document.getElementById("tab-"+t).classList.toggle("hidden",t!==tab));
+}
+function exportCSV(){
+  const rows=[["賽事",state.eventName],[],["排名","選手","賽事積分","勝場","敗場","輪空","Buchholz"]];
+  standings().forEach((p,i)=>{const s=playerStats(p);rows.push([i+1,p.name,p.points,s.wins,s.losses,p.byes||0,s.buchholz]);});
+  rows.push([],["輪數","對戰","選手 A","選手 B","A 分數","B 分數","勝方"]);
+  state.rounds.forEach(r=>r.matches.forEach((m,i)=>rows.push([r.number,i+1,player(m.a)?.name||"",player(m.b)?.name||"",m.scoreA,m.scoreB,player(m.winner)?.name||"未完成"])));
+  const csv="\uFEFF"+rows.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\r\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=(state.eventName||"beyblade-x").replace(/[\\/:*?"<>|]/g,"_")+".csv";a.click();URL.revokeObjectURL(url);
+}
+document.getElementById("addForm").addEventListener("submit",e=>{e.preventDefault();addPlayer(document.getElementById("playerName").value);document.getElementById("playerName").value="";});
+document.getElementById("startBtn").addEventListener("click",pairRound);
+document.getElementById("nextRoundBtn").addEventListener("click",pairRound);
+document.getElementById("resetBtn").addEventListener("click",confirmReset);
+document.getElementById("clearBtn").addEventListener("click",confirmReset);
+document.getElementById("exportBtn").addEventListener("click",exportCSV);
+document.getElementById("eventName").addEventListener("change",()=>{save();});
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+document.getElementById("dialogYes").addEventListener("click",()=>{document.getElementById("confirmDialog").close();if(pendingAction)pendingAction();pendingAction=null;});
+document.getElementById("dialogNo").addEventListener("click",()=>{document.getElementById("confirmDialog").close();pendingAction=null;});
+document.getElementById("eventName").value=state.eventName;
+render();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(err => {
+      console.warn("Service worker registration failed:", err);
+    });
+  });
+}
+</script>
+</body>
+</html>
