@@ -4,12 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BX Tournament">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="apple-touch-icon" href="./icon-192.png">
-<title>Beyblade X Tournament Manager</title>
+<title>Beyblade X Tournament Manager v2</title>
 <style>
 :root{color-scheme:dark;--bg:#0b1020;--panel:#151d30;--panel2:#1d2940;--line:#2d3a54;--text:#f4f7fb;--muted:#aab6c9;--accent:#f5a623;--green:#37c987;--red:#ff6b6b;--blue:#75b7ff}
 *{box-sizing:border-box}body{margin:0;background:linear-gradient(160deg,#101a30,#080c16 65%);color:var(--text);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
@@ -49,6 +44,12 @@ dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);bo
 dialog::backdrop{background:#000a}
 @media(min-width:650px){main{padding-left:20px;padding-right:20px}.panel{padding:18px}.finish-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 </style>
+<meta name="theme-color" content="#111827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BX Tournament">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
 </head>
 <body>
 <header>
@@ -59,7 +60,7 @@ dialog::backdrop{background:#000a}
 <main>
   <section class="panel" style="border-color:#8a6a2a;background:#292315">
     <strong>iPhone / iPad 使用提示</strong>
-    <p class="note" style="margin:6px 0 0">建議使用 Safari 開啟本網頁，並透過「分享」→「加入主畫面」建立桌面圖示。賽事資料會保存在目前裝置的瀏覽器中；更換裝置或清除網站資料前，請先匯出 CSV 備份。</p>
+    <p class="note" style="margin:6px 0 0">請用 Safari 開啟此 HTML 檔案，不要停留在「檔案」App 的快速預覽畫面。若按鈕沒有反應，請在分享選單選擇「在 Safari 中開啟」。</p>
   </section>
   <section class="panel">
     <div class="row">
@@ -89,6 +90,17 @@ dialog::backdrop{background:#000a}
       <button type="submit">新增</button>
     </form>
     <div id="playerList"></div>
+    <div class="panel" style="margin:12px 0 0;padding:12px;background:#10192b">
+      <div class="row between">
+        <label for="roundLimit"><strong>賽事總輪數</strong></label>
+        <span id="roundSuggestion" class="pill">建議輪數：—</span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <input id="roundLimit" type="number" inputmode="numeric" min="1" max="20" step="1" value="1" aria-label="賽事總輪數">
+        <span class="muted">輪</span>
+      </div>
+      <p class="note" style="margin:7px 0 0">系統按參賽人數建議輪數：向上取整 log₂(人數)。開始賽事後會鎖定總輪數。</p>
+    </div>
     <div class="row" style="margin-top:12px">
       <button id="startBtn" class="grow" disabled>開始第一輪配對</button>
       <button id="resetBtn" class="danger small">重設賽事</button>
@@ -101,6 +113,7 @@ dialog::backdrop{background:#000a}
       <h2 style="margin:0">對戰紀錄</h2>
       <span id="roundLabel" class="pill">尚未開始</span>
     </div>
+    <div id="tournamentStatus" class="note" style="margin:8px 0 10px"></div>
     <div id="matchList"></div>
     <div class="row" style="margin-top:12px">
       <button id="nextRoundBtn" class="grow" disabled>產生下一輪配對</button>
@@ -120,12 +133,14 @@ dialog::backdrop{background:#000a}
     <div class="row between"><span>Burst Finish</span><strong>2 分</strong></div><hr>
     <div class="row between"><span>Spin Finish</span><strong>1 分</strong></div><hr>
     <div class="row between"><span>單場勝出條件</span><strong>先達 4 分</strong></div><hr>
-    <div class="row between"><span>瑞士輪勝方積分</span><strong>3 分</strong></div>
+    <div class="row between"><span>瑞士輪勝方積分</span><strong>3 分</strong></div><hr>
+    <div class="row between"><span>賽事總輪數</span><strong id="settingsRoundLimit">尚未設定</strong></div>
+    <p class="note">系統按參賽人數建議輪數（向上取整 log₂ 人數），可在開始前手動修改。完成最後一輪後，程式會停止配對並保留最終排行榜。</p>
     <p class="note">本程式按目前設定的 Beyblade X Finish 得分及「先達 4 分」進行記錄。不同賽事主辦方可能另有比賽流程、組別、裁判及平手處理規定，正式比賽請以該場賽事規章為準。</p>
     <button id="clearBtn" class="danger">清除全部賽事資料</button>
   </section>
 </main>
-<footer>Beyblade X Tournament Manager v2 · Single-file web app</footer>
+<footer>Beyblade X Tournament Manager v3 · Limited-round Swiss system</footer>
 
 <dialog id="confirmDialog">
   <h2 id="dialogTitle">確認操作</h2>
@@ -149,7 +164,7 @@ let state = loadState();
 let pendingAction = null;
 
 function freshState(){
-  return {eventName:"Beyblade X Tournament",players:[],rounds:[],nextPlayerId:1,nextMatchId:1,started:false};
+  return {eventName:"Beyblade X Tournament",players:[],rounds:[],nextPlayerId:1,nextMatchId:1,started:false,totalRounds:null,roundsManuallySet:false};
 }
 function loadState(){
   try{
@@ -157,7 +172,15 @@ function loadState(){
     if(!raw) return freshState();
     const parsed=JSON.parse(raw);
     if(!parsed || !Array.isArray(parsed.players) || !Array.isArray(parsed.rounds)) return freshState();
-    return {...freshState(),...parsed};
+    const migrated={...freshState(),...parsed};
+    if(!Number.isInteger(migrated.totalRounds)||migrated.totalRounds<1){
+      migrated.totalRounds=migrated.started
+        ? Math.max(suggestedRounds(migrated.players.length),migrated.rounds.length,1)
+        : null;
+      migrated.roundsManuallySet=!!migrated.started;
+    }
+    if(typeof migrated.roundsManuallySet!=="boolean") migrated.roundsManuallySet=!!migrated.started;
+    return migrated;
   }catch(e){return freshState();}
 }
 function save(){
@@ -172,6 +195,17 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",
 function player(id){return state.players.find(p=>p.id===id);}
 function allMatches(){return state.rounds.flatMap(r=>r.matches);}
 function currentRound(){return state.rounds[state.rounds.length-1]||null;}
+function suggestedRounds(playerCount){
+  return playerCount>=2 ? Math.max(1,Math.ceil(Math.log2(playerCount))) : 1;
+}
+function currentRoundComplete(){
+  const r=currentRound();
+  return !!r && r.matches.every(m=>m.status==="complete");
+}
+function tournamentComplete(){
+  return state.started && Number.isInteger(state.totalRounds) &&
+    state.rounds.length>=state.totalRounds && currentRoundComplete();
+}
 function playerStats(p){
   const matches=allMatches().filter(m=>m.status==="complete"&&(m.a===p.id||m.b===p.id));
   const wins=matches.filter(m=>m.winner===p.id).length;
@@ -189,16 +223,40 @@ function standings(){
 function render(){
   document.getElementById("eventName").value=state.eventName;
   document.getElementById("playerCount").textContent=state.players.length;
-  document.getElementById("roundCount").textContent=state.rounds.length;
+  const suggested=suggestedRounds(state.players.length);
+  if(!state.started && !state.roundsManuallySet) state.totalRounds=suggested;
+  document.getElementById("roundCount").textContent=state.started
+    ? `${state.rounds.length}/${state.totalRounds||"—"}`
+    : `0/${state.totalRounds||suggested}`;
   const ms=allMatches(),done=ms.filter(m=>m.status==="complete").length;
   document.getElementById("matchCount").textContent=`${done}/${ms.length}`;
   document.getElementById("startBtn").disabled=state.started||state.players.length<2;
   document.getElementById("startBtn").textContent=state.started?"賽事已開始":"開始第一輪配對";
+
+  const roundInput=document.getElementById("roundLimit");
+  roundInput.value=state.totalRounds||suggested;
+  roundInput.disabled=state.started;
+  document.getElementById("roundSuggestion").textContent=`建議輪數：${suggested} 輪`;
+  document.getElementById("settingsRoundLimit").textContent=state.totalRounds?`${state.totalRounds} 輪`:"尚未設定";
+
   renderPlayers();renderMatches();renderStandings();
   const r=currentRound();
-  document.getElementById("roundLabel").textContent=r?`第 ${r.number} 輪`:"尚未開始";
-  document.getElementById("nextRoundBtn").disabled=!r||!r.matches.every(m=>m.status==="complete")||state.players.length<2;
-  document.getElementById("nextRoundBtn").textContent=r?`產生第 ${r.number+1} 輪配對`:"產生下一輪配對";
+  document.getElementById("roundLabel").textContent=r?`第 ${r.number} 輪 / 共 ${state.totalRounds||"—"} 輪`:"尚未開始";
+  const finished=tournamentComplete();
+  const canNext=!!r && currentRoundComplete() && !finished && state.players.length>=2;
+  const next=document.getElementById("nextRoundBtn");
+  next.disabled=!canNext;
+  next.textContent=finished?"賽事已結束":r?`產生第 ${r.number+1} 輪配對`:"產生下一輪配對";
+  const status=document.getElementById("tournamentStatus");
+  if(!state.started){
+    status.textContent="完成選手登記並設定總輪數後，即可開始賽事。";
+  }else if(finished){
+    status.innerHTML='<strong style="color:var(--green)">賽事已結束！</strong> 已完成全部 '+state.totalRounds+' 輪，以下為最終排行榜。';
+  }else if(currentRoundComplete()){
+    status.textContent=`第 ${state.rounds.length} / ${state.totalRounds} 輪已完成，尚餘 ${state.totalRounds-state.rounds.length} 輪。`;
+  }else{
+    status.textContent=`目前進行第 ${state.rounds.length} / ${state.totalRounds} 輪，請完成所有對戰後再進入下一輪。`;
+  }
 }
 function renderPlayers(){
   const el=document.getElementById("playerList");
@@ -275,6 +333,30 @@ function recordFinish(matchId,playerId,finishKey){
   save();render();
 }
 function pairRound(){
+  if(state.started){
+    if(tournamentComplete()){
+      alert("賽事已完成所有設定輪數，不能再產生新一輪配對。");
+      return;
+    }
+    if(!currentRoundComplete()){
+      alert("請先完成目前這一輪的所有比賽。");
+      return;
+    }
+  }else{
+    const input=document.getElementById("roundLimit");
+    const requested=Number(input.value);
+    if(!Number.isInteger(requested)||requested<1||requested>20){
+      alert("總輪數請輸入 1 至 20 之間的整數。");
+      input.focus();
+      return;
+    }
+    state.totalRounds=requested;
+  }
+  if(state.rounds.length>=state.totalRounds){
+    alert("已達到設定的總輪數，賽事已結束。");
+    save();render();
+    return;
+  }
   const sorted=standings();
   let bye=null,pool=[...sorted];
   if(pool.length%2===1){
@@ -282,14 +364,11 @@ function pairRound(){
     bye=byeCandidates[0];
     pool=pool.filter(p=>p.id!==bye.id);
   }
-  // Greedy Swiss pairing: pair players in standings order, avoid rematches
-  // whenever possible, then choose the closest score group. This stays fast
-  // even for large local tournaments.
   const previousPairs=new Set(allMatches().map(m=>[m.a,m.b].sort((x,y)=>x-y).join(":")));
   const pairs=[];
   while(pool.length){
     const first=pool.shift();
-    let bestIndex=-1, bestCost=Infinity;
+    let bestIndex=-1,bestCost=Infinity;
     for(let i=0;i<pool.length;i++){
       const opponent=pool[i];
       const key=[first.id,opponent.id].sort((x,y)=>x-y).join(":");
@@ -340,6 +419,18 @@ document.getElementById("resetBtn").addEventListener("click",confirmReset);
 document.getElementById("clearBtn").addEventListener("click",confirmReset);
 document.getElementById("exportBtn").addEventListener("click",exportCSV);
 document.getElementById("eventName").addEventListener("change",()=>{save();});
+document.getElementById("roundLimit").addEventListener("change",e=>{
+  if(state.started)return;
+  const value=Number(e.target.value);
+  if(!Number.isInteger(value)||value<1||value>20){
+    alert("總輪數請輸入 1 至 20 之間的整數。");
+    e.target.value=state.totalRounds||suggestedRounds(state.players.length);
+    return;
+  }
+  state.totalRounds=value;
+  state.roundsManuallySet=true;
+  save();render();
+});
 document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
 document.getElementById("dialogYes").addEventListener("click",()=>{document.getElementById("confirmDialog").close();if(pendingAction)pendingAction();pendingAction=null;});
 document.getElementById("dialogNo").addEventListener("click",()=>{document.getElementById("confirmDialog").close();pendingAction=null;});
